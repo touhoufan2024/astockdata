@@ -26,13 +26,13 @@ jobs:
       - name: Sync to data branch
         run: |
           git checkout data
-          # 将 main 的变更合并到 data 分支
-          git merge main --no-edit
+          # 使用 -X theirs 自动解决冲突，优先保留 main 分支的内容
+          git merge main --no-edit -X theirs
           git push origin data
 
       - name: Sync to llm_analyze branch
         run: |
           git checkout llm_analyze
-          # 将 main 的变更合并到 llm_analyze 分支
-          git merge main --no-edit
+          # 同理，优先保留 main 的脚本和配置
+          git merge main --no-edit -X theirs
           git push origin llm_analyze

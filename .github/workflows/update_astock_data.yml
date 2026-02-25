@@ -2,8 +2,8 @@ name: Fetch and Update Stock Data
 
 on:
   schedule:
-    # 每天北京时间 16:00 执行 (16 - 8 = 08 UTC)
-    - cron: '0 8 * * *'
+    # 每天北京时间 18:00 执行 (18 - 8 = 08 UTC)
+    - cron: '0 10 * * *'
   # push:
   #   branches:
   #     - main
