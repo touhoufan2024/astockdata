@@ -1,0 +1,11 @@
+akshare
+pandas
+
+openai
+
+fire
+loguru
+
+requests
+urllib3
+retrying
