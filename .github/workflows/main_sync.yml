@@ -1,0 +1,38 @@
+name: Sync Main to Other Branches
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 必须获取完整历史才能进行分支同步
+
+      - name: Config Git
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Sync to data branch
+        run: |
+          git checkout data
+          # 将 main 的变更合并到 data 分支
+          git merge main --no-edit
+          git push origin data
+
+      - name: Sync to llm_analyze branch
+        run: |
+          git checkout llm_analyze
+          # 将 main 的变更合并到 llm_analyze 分支
+          git merge main --no-edit
+          git push origin llm_analyze
