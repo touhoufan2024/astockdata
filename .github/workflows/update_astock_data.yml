@@ -1,0 +1,73 @@
+name: Fetch and Update Stock Data
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 赋予推送权限
+
+    steps:
+      # 1. 拉取 main 分支代码
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # 2. 初始化 Python 3.12
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # 3. 安装依赖
+      - name: Install dependencies
+        run: |
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # 4. 执行抓取脚本
+      - name: Run fetch script
+        run: |
+          python fetch_a_stock_data.py my_stock_zh_index_daily
+
+      # 5. 暂存生成的 CSV 数据 (防止切换分支时被清空)
+      - name: Stash generated data
+        run: |
+          mkdir -p /tmp/stock_data
+          cp -r a_stock_dir/my_stock_zh_index_daily/* /tmp/stock_data/
+
+      # 6. 切换到 data 分支
+      # 注意：如果 data 分支不存在，这里会自动创建
+      - name: Checkout data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          fetch-depth: 0
+
+      # 7. 暴力覆盖数据并提交
+      - name: Overwrite data and Push
+        run: |
+          # 配置 Git 用户信息
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # 确保目标目录存在
+          mkdir -p a_stock_dir/my_stock_zh_index_daily
+
+          # 暴力覆盖：将暂存的数据拷贝回来
+          cp -rf /tmp/stock_data/* a_stock_dir/my_stock_zh_index_daily/
+
+          # 提交并推送
+          git add a_stock_dir/my_stock_zh_index_daily/
+          # 检查是否有文件变化，避免空提交导致报错
+          if git diff --staged --quiet; then
+            echo "No changes detected, skipping commit."
+          else
+            git commit -m "chore: auto-update stock data $(date +'%Y-%m-%d %H:%M')"
+            git push origin data
+          fi
