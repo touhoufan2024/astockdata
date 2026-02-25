@@ -128,7 +128,7 @@ class FetchData:
 
             prompt = f"请分析{csv_file.stem}最近60个交易日的走势：\n\n{data_str}\n\n请给出趋势研判和支撑压力位。并给出空仓和持仓时的操作建议, 在开头给出最新日期"
             # ret = self._llm_analyze_entry(prompt)
-            ret = "test response"
+            _ret = "test response"
 
             _md_dir = f"{_dir}/{csv_file.stem}.md"
             with open(_md_dir, "w", encoding="utf-8") as f:
