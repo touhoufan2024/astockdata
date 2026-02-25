@@ -1,0 +1,78 @@
+name: LLM Stock Analyze (From Data Branch)
+
+on:
+  schedule:
+    # 每天北京时间 16:00 执行 (UTC 08:00)
+    - cron: '0 8 * * *'
+  push:
+    branches:
+      - data  # 当 data 分支有更新时触发（可选）
+  workflow_dispatch: # 支持手动触发
+
+jobs:
+  analyze-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      # 1. 重点：拉取 data 分支的代码和数据
+      - name: Checkout data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          fetch-depth: 0 # 获取完整历史以便切换分支
+
+      # 2. 设置 Python 3.12
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # 3. 安装依赖
+      - name: Install dependencies
+        run: |
+          # 如果 requirements.txt 只在 main 分支，你可能需要先从 main 拷贝或者在这里直接 pip install
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            pip install pandas openai  # 举例：直接安装常用库
+          fi
+
+      # 4. 执行分析脚本
+      # 此时脚本是在 data 分支的环境下运行，可以直接读取 a_stock_dir/my_stock_zh_index_daily 里的 CSV
+      - name: Run LLM Analyze
+        env:
+          DS_API_KEY: ${{ secrets.DS_API_KEY }}
+        run: |
+          python fetch_a_stock_data.py llm_analyze
+
+      # 5. 暂存生成的 md 文件夹
+      - name: Stash analysis results
+        run: |
+          mkdir -p /tmp/llm_results
+          # 匹配脚本生成的带时间戳文件夹
+          cp -r a_stock_dir/llm_analyze_* /tmp/llm_results/
+
+      # 6. 切换到 llm_analyze 分支
+      - name: Checkout llm_analyze branch
+        run: |
+          git fetch origin llm_analyze
+          git checkout llm_analyze
+
+      # 7. 移入数据并提交推送
+      - name: Commit and Push
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          mkdir -p a_stock_dir/
+          cp -rn /tmp/llm_results/* a_stock_dir/
+
+          git add a_stock_dir/
+          if git diff --staged --quiet; then
+            echo "No new changes."
+          else
+            git commit -m "feat: add llm report from data branch $(date +'%Y-%m-%d')"
+            git push origin llm_analyze
+          fi
