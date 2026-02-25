@@ -4,9 +4,9 @@ on:
   schedule:
     # 每天北京时间 16:00 执行 (16 - 8 = 08 UTC)
     - cron: '0 8 * * *'
-  push:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch: # 允许手动点击按钮触发
 
 jobs:
